@@ -51,7 +51,6 @@ categories: 计算机
     systemctl restart docker
 
 # 关闭Swap的设备
-    //在所有节点上执行：swapoff -a
     swapoff -a
 
 # 下载docker镜像
@@ -77,3 +76,18 @@ categories: 计算机
 
 # 使用 kubeadm 创建一个单主集群
     kubeadm init <args>
+# 执行以下命令
+    mkdir -p $HOME/.kube
+    sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    sudo chown $(id -u):$(id -g) $HOME/.kube/config
+# 添加节点加入集群
+    kubeadm join <master ipaddress>:6443 --token <token key> \
+    --discovery-token-ca-cert-hash sha256:<ca-hash key>
+
+* _token key_：
+  
+        kubeadm token create
+* _ca-hash key_： 
+
+        openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //' 
+
