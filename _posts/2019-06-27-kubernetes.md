@@ -4,29 +4,76 @@ title:  "K8s安装国内源"
 date:   2019-06-27 16:11:36 +0800
 categories: 计算机
 ---
+# 安装kubelet kubeadm kubectl
+* 官方安装
+  
+        apt-get update && apt-get install -y apt-transport-https curl
+        curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+        cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
+        deb https://apt.kubernetes.io/ kubernetes-xenial main
+        EOF
+        apt-get update
+        apt-get install -y kubelet kubeadm kubectl
+        apt-mark hold kubelet kubeadm kubectl
 
-# 官方安装
+    *目前只有Ubuntu16.04的源*
 
-    apt-get update && apt-get install -y apt-transport-https curl
-    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-    cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
-    deb https://apt.kubernetes.io/ kubernetes-xenial main
+* 国内安装
+
+        apt-get update && apt-get install -y apt-transport-https curl
+        curl -s https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add - 
+        cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
+        deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main
+        EOF 
+        apt-get update
+        apt-get install -y kubelet kubeadm kubectl
+        apt-mark hold kubelet kubeadm kubectl
+
+    *目前只有Ubuntu16.04的源*
+# 设置Container runtimes
+    # Setup docker daemon.
+    cat > /etc/docker/daemon.json <<EOF
+    {
+        "exec-opts": ["native.cgroupdriver=systemd"],
+        "log-driver": "json-file",
+        "log-opts": {
+            "max-size": "100m"
+        },
+        "storage-driver": "overlay2"
+    }
     EOF
-    apt-get update
-    apt-get install -y kubelet kubeadm kubectl
-    apt-mark hold kubelet kubeadm kubectl
 
-*目前只有Ubuntu16.04的源*
+    mkdir -p /etc/systemd/system/docker.service.d
 
-# 国内安装
+    # Restart docker.
+    systemctl daemon-reload
+    systemctl enable docker.service
+    systemctl restart docker
 
-    apt-get update && apt-get install -y apt-transport-https curl
-    curl -s https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add - 
-    cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
-    deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main
-    EOF 
-    apt-get update
-    apt-get install -y kubelet kubeadm kubectl
-    apt-mark hold kubelet kubeadm kubectl
+# 关闭Swap的设备
+    //在所有节点上执行：swapoff -a
+    swapoff -a
 
-*目前只有Ubuntu16.04的源*    
+# 下载docker镜像
+* gcr官方镜像（被墙）
+  
+        docker pull k8s.gcr.io/kube-apiserver:v1.15.0 
+        docker pull k8s.gcr.io/kube-controller-manager:v1.15.0 
+        docker pull k8s.gcr.io/kube-scheduler:v1.15.0 
+        docker pull k8s.gcr.io/kube-proxy:v1.15.0 
+        docker pull k8s.gcr.io/pause:3.1 
+        docker pull k8s.gcr.io/etcd:3.3.10 
+        docker pull k8s.gcr.io/coredns:1.3.1
+
+* 采用docker官方镜像，之后tag改名
+  
+        docker pull mirrorgooglecontainers/kube-apiserver:v1.15.0 
+        docker pull mirrorgooglecontainers/kube-controller-manager:v1.15.0 
+        docker pull mirrorgooglecontainers/kube-scheduler:v1.15.0 
+        docker pull mirrorgooglecontainers/kube-proxy:v1.15.0 
+        docker pull mirrorgooglecontainers/pause:3.1 
+        docker pull mirrorgooglecontainers/etcd:3.3.10 
+        docker pull coredns/coredns:1.3.1
+
+# 使用 kubeadm 创建一个单主集群
+    kubeadm init <args>
