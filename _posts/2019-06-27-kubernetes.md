@@ -52,7 +52,7 @@ categories: 计算机
 
 # 关闭Swap的设备
     swapoff -a
-
+*永久关闭，只需要注释/etc/fstab中的swap分区即可*
 # 下载docker镜像
 * gcr官方镜像（被墙）
   
@@ -75,7 +75,7 @@ categories: 计算机
         docker pull coredns/coredns:1.3.1
 
 # 使用 kubeadm 创建一个单主集群
-    kubeadm init <args>
+    kubeadm init --pod-network-cidr=10.244.0.0/16 //ip必须与kube-flannel.yml 中的IP一直
 # 执行以下命令
     mkdir -p $HOME/.kube
     sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
@@ -90,4 +90,11 @@ categories: 计算机
 * _ca-hash key_： 
 
         openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //' 
-
+# 添加网络组件
+    kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml 
+    kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k8s-manifests/kube-flannel-rbac.yml
+# 常用命令
+    kubectl get pods -o wide -n kube-system
+    kubectl get node
+    kubectl label nodes  <node1> node-role.kubernetes.io/node=
+    kubectl label nodes  <node1> node-role.kubernetes.io/node-
